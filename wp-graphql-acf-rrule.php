@@ -21,24 +21,6 @@ add_filter('wpgraphql_acf_supported_fields', function($supported_fields) {
 
 add_action( 'graphql_register_types', function() {
 
-	register_graphql_object_type('DatesCollection', [
-		'description' => __('Date object'),
-		'fields' => [
-			'date' => [
-				'type' => 'String',
-				'description' => __('Date'),
-			],
-			'timezone_type' => [
-				'type' => 'Number',
-				'description' => __('Timezone type'),
-			],
-			'timezone' => [
-				'type' => 'String',
-				'description' => __('Timezone'),
-			]
-		],
-	]);
-
 	register_graphql_object_type('Rrule', [
 		'description' => __('ACF Recurring rule field'),
 		'fields' => [
@@ -99,7 +81,7 @@ add_action( 'graphql_register_types', function() {
 				'description' => __('How many times does this repeat'),
 			],
 			'dates_collection' => [
-				'type' => ['list_of' => "DatesCollection"],
+				'type' => ['list_of' => "String"],
 				'description' => __('List of all occurrences'),
 			],
 			'text' => [
@@ -136,6 +118,18 @@ add_filter( 'wpgraphql_acf_register_graphql_field', function($field_config, $typ
 		} elseif( array_key_exists( $acf_field['key'], $root ) ) {
 				$value = $root[$acf_field['key']];
 		} 
+
+		if (is_array($value)) {
+			if (array_key_exists('dates_collection', $value)) {
+				$list_of_dates = array();
+
+				foreach($value['dates_collection'] as $date) {
+					$list_of_dates[] = $date->format('Y-m-d\TH:i:sP');
+				}
+
+				$value['list_of_dates'] = $list_of_dates;
+			}
+		}
 
 		return !empty( $value ) ? $value : null;
 	};
