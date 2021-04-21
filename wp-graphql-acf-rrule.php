@@ -21,6 +21,27 @@ add_filter('wpgraphql_acf_supported_fields', function($supported_fields) {
 
 add_action( 'graphql_register_types', function() {
 
+	register_graphql_scalar('DateTime', [
+		'description' => __('The `DateTime` scalar type represents time data, represented as an ISO-8601 encoded UTC date string.'),
+		'serialize' => function($value) {
+			if (! $value instanceof DateTime) {
+				throw new Error('Value is not a DateTime object.');
+			}
+
+			return $value->format(DateTime::ATOM);
+		},
+		'parseValue' => function($value) {
+			return DateTime::createFromFormat(DateTime::ATOM, $value) ?: null;
+		},
+		'parseLiteral' => function($valueNode, array $variables = null) {
+			if ( ! $valueNode instanceof GraphQLLanguageASTStringValueNode ) {
+				throw new Error( 'Query error: Can only parse strings got: ' . $valueNode->kind, [$valueNode] );
+			}
+
+			return DateTime::createFromFormat(DateTime::ATOM, $valueNode->value) ?: null;
+		}
+	]);
+
 	register_graphql_object_type('Rrule', [
 		'description' => __('ACF Recurring rule field'),
 		'fields' => [
@@ -81,7 +102,7 @@ add_action( 'graphql_register_types', function() {
 				'description' => __('How many times does this repeat'),
 			],
 			'dates_collection' => [
-				'type' => ['list_of' => "String"],
+				'type' => ['list_of' => 'DateTime'],
 				'description' => __('List of all occurrences'),
 			],
 			'text' => [
@@ -112,24 +133,12 @@ add_filter( 'wpgraphql_acf_register_graphql_field', function($field_config, $typ
 	$field_config['resolve'] = function( $root ) use ( $acf_field ) {
 		// when field is used in WP_Post and is top-level field (not nested in repeater, flexible content etc.)
 		if( $root->ID ) {
-				$value = get_field( $acf_field['key'], $root->ID, false );
+			$value = get_field( $acf_field['key'], $root->ID, false );
 
 		// when field is used in WP_Post and is nested in repeater, flexible content etc. ...
 		} elseif( array_key_exists( $acf_field['key'], $root ) ) {
-				$value = $root[$acf_field['key']];
+			$value = $root[$acf_field['key']];
 		} 
-
-		if (is_array($value)) {
-			if (array_key_exists('dates_collection', $value)) {
-				$list_of_dates = array();
-
-				foreach($value['dates_collection'] as $date) {
-					$list_of_dates[] = $date->format('Y-m-d\TH:i:sP');
-				}
-
-				$value['list_of_dates'] = $list_of_dates;
-			}
-		}
 
 		return !empty( $value ) ? $value : null;
 	};
