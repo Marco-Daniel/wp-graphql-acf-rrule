@@ -1,0 +1,14 @@
+{
+  "name": "wp-graphql-acf-rrule",
+  "version": "1.0.0",
+  "description": "wordpress plugin to expose acf-rrule plugin to wpGraphql plugin",
+  "main": "index.js",
+  "scripts": {
+    "bundle": "dir-archiver --src . --dest ../wp-graphql-acf-rrule.zip --exclude .eslintrc .git .gitattributes .github .gitignore README.md node_modules package-lock.json package.json"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "dir-archiver": "^2.1.0"
+  }
+}
